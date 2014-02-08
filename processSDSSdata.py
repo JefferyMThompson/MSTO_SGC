@@ -16,8 +16,24 @@ def testfile(filetype, filename):
 		fh = open(filename)
 	except IOError as error:
 		print("{0} {1}".format(filetype, error))
-			
-def command(verbose, input, output, cutfile, start, end, red):
+	return
+
+def loadbounds(file, start, end):
+	count = range(start, end)
+	bounds = [([0]*2) for i in count]
+	for stripe in count:
+		with open(file, 'rb') as boundfile:
+			boundfile.seek(0)
+			dictionary = csv.DictReader(boundfile)
+			for row in dictionary:
+				stripe_column = int(row['Stripe'])
+            	start_column = float(row['Start'])
+            	end_column = float(row['End'])
+            if(stripe_column == stripe):
+                bounds[stripe-start] = [start_column, end_column]
+	return (bounds)
+	
+def command(verbose, input, output, boundfile, start, end, red):
 	parser = argparse.ArgumentParser(description =
 		'Process SDSS star files for use with MilkyWay@home Separation.')
 	parser.add_argument('-v', '--verbose',
@@ -27,9 +43,11 @@ def command(verbose, input, output, cutfile, start, end, red):
 		help='Specify the location of the input SDSS csv file.'
 		+ 'This defaults to ./sdss.csv .')
 	parser.add_argument('-o', '--output', type = str,
-		help='Specify the location of the output stars file.')
-	parser.add_argument('-c', '--cutfile', type = str,
-		help='Specify the location of a csv cuts file.')
+		help='Specify the location of the output stars file.'
+		+ 'This defaults to ./sdss . The Stripe number and the'
+		+ 'extension .stars is appended to each file created.')
+	parser.add_argument('-b', '--boundfile', type = str,
+		help='Specify the location of a csv bound file.')
 	parser.add_argument('-s', '--start', type = int,
 		help='Limit the starting wedge number to process.')
 	parser.add_argument('-e', '--end', type = int,
@@ -48,38 +66,38 @@ def command(verbose, input, output, cutfile, start, end, red):
 		filetype = 'Output file: '
 		output = args.output
 		testfile(filetype, output)
-	if args.cutfile:
-		filetype = 'Cutfile: '
-		cutfile = args.cutfile
-		testfile(filetype, cutfile)
+	if args.boundfile:
+		filetype = 'Boundfile: '
+		boundfile = args.boundfile
+		testfile(filetype, boundfile)
 	if args.start:
 		start = args.start
 	if args.end:
 		end = args.end
 	if args.red:
 		red = True
-	return (verbose, input, output, cutfile, start, end, red)
+	return (verbose, input, output, boundfile, start, end, red)
 
 def main():
 
 	# Set default values for control variables
 
-	verbose	= False
-	input	= './sdss.csv'
-	output	= './sdss'
-	cutfile	= None
-	start	= 1
-	end		= 144
-	red		= False	
+	verbose		= False
+	input		= './sdss.csv'
+	output		= './sdss'
+	boundfile	= None
+	start		= 1
+	end			= 144
+	red			= False	
 
 	# Override control variables if set in command line options
 
-	verbose, input, output, cutfile, start, end, red = command(
-		verbose, input, output, cutfile, start, end, red)
+	verbose, input, output, boundfile, start, end, red = command(
+		verbose, input, output, boundfile, start, end, red)
 
-	# Load cuts
-	
-	
+	# Load bounds
+	if boundfile:
+		bounds = loadbounds(boundfile, start, end)
 	
 if __name__ == "__main__":
 	main()
